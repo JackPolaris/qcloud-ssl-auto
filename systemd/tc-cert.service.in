@@ -1,0 +1,27 @@
+[Unit]
+Description=腾讯云免费 SSL 证书自动续期与部署
+Documentation=https://cloud.tencent.com/document/product/400/41678
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+
+# __WORKDIR__ 由 install.sh 替换为本项目所在的实际路径，
+# 这样仓库里不会写死任何机器相关的绝对路径。
+WorkingDirectory=__WORKDIR__
+ExecStart=/usr/bin/python3 __WORKDIR__/tc-cert-auto.py
+
+# 加固：脚本只需要写 /etc/nginx/ssl（证书目录）。
+# 若使用 FILE 验证模式还会写验证目录，故用 - 前缀允许该路径不存在。
+ProtectSystem=full
+ReadWritePaths=/etc/nginx/ssl -/var/www/pki-validation
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tc-cert

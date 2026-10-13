@@ -1,0 +1,36 @@
+{
+  "_说明": "把本文件复制成 config.json 后按需修改。config.json 已被 .gitignore 忽略，因此未来的 git pull 不会覆盖你的实际配置。",
+
+  "_dv_auth_method_说明": "DNS_AUTO = 域名解析在本腾讯云账号的『云解析 DNS』里，腾讯自动加验证记录，全自动无需人工。FILE = 在站点放验证文件（需该域名 80/443 对 CA 的爬虫可达）。",
+  "dv_auth_method": "DNS_AUTO",
+
+  "_renew_before_days_说明": "证书剩余有效期小于这个天数才真正续签；否则直接退出（幂等，可放心频繁运行）。",
+  "renew_before_days": 30,
+
+  "_issue_timeout_seconds_说明": "等待签发的上限秒数。DNS_AUTO 通常 1-10 分钟，FILE 需要等 CA 爬虫。",
+  "issue_timeout_seconds": 1800,
+
+  "nginx_bin": "/usr/sbin/nginx",
+
+  "_dcv_dir_说明": "仅 FILE 验证模式使用：验证文件的站点根目录。",
+  "dcv_dir": "/var/www/pki-validation",
+
+  "_domains_说明": "腾讯云免费证书是单域名；申请根域名会自动赠送 www.<根域名>，所以 example.com 一张即可覆盖 www。不支持泛域名。",
+  "_required_sans_说明": "安全阀：部署前逐字校验新证书的 SAN 必须覆盖这里列出的每个域名，缺任何一个就拒绝部署并保留旧证书（校验发生在改动任何文件之前）。",
+  "domains": [
+    {
+      "domain": "example.com",
+      "alias": "example-root",
+      "crt_path": "/etc/nginx/ssl/example.com_bundle.crt",
+      "key_path": "/etc/nginx/ssl/example.com.key",
+      "required_sans": ["example.com", "www.example.com"]
+    },
+    {
+      "domain": "app.example.com",
+      "alias": "example-app",
+      "crt_path": "/etc/nginx/ssl/app.example.com_bundle.crt",
+      "key_path": "/etc/nginx/ssl/app.example.com.key",
+      "required_sans": ["app.example.com"]
+    }
+  ]
+}

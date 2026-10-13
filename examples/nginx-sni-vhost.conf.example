@@ -1,0 +1,71 @@
+# 示例：同一台 nginx 用 SNI 在 443 端口承载多个 HTTPS 站点
+#
+# 原理：nginx 在 **TLS 握手阶段**按 SNI（ClientHello 里明文携带的域名）匹配 server_name，
+# 命中后使用【该 server 块自己的】ssl_certificate 完成握手。
+# 因此同一个 IP、同一个 443 端口可以并存多个 HTTPS 站点 —— 靠证书与 server_name 区分，
+# 而不是靠端口。
+#
+# 三个要点：
+#   1. 各 server 块的 server_name 不能重叠，否则请求会落到先定义的那个
+#   2. 每个块必须配置**覆盖自身域名**的证书，否则浏览器报 ERR_CERT_COMMON_NAME_INVALID
+#   3. 443 上若未显式声明 default_server，则第一个加载的块充当默认，
+#      任何 server_name 都不匹配的请求（含直接用 IP 访问）都会落到它上面
+#
+# 本文件里的路径与 config.json 的 crt_path / key_path 一一对应。
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name app.example.com;
+
+    # 由 tc-cert-auto.py 自动申请并部署到这个路径
+    ssl_certificate     /etc/nginx/ssl/app.example.com_bundle.crt;
+    ssl_certificate_key /etc/nginx/ssl/app.example.com.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    client_max_body_size 100m;
+
+    # 访问日志建议按站点分开，便于排查
+    access_log /var/log/nginx/app.access.log;
+    error_log  /var/log/nginx/app.error.log;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 若后端有服务端流式响应（SSE / NDJSON 逐条推送），必须关闭缓冲，
+        # 否则 nginx 会攒够一批才转发，前端拿不到实时结果。
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding on;
+
+        # 长连接场景（直播 / WebSocket）放宽超时
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_connect_timeout 30s;
+    }
+}
+
+# 配套的 80 端口块：把所有明文请求跳到 HTTPS。
+# 注意：如果同一域名还要用于 ACME / 文件验证，必须在该块内单独放行
+# `/.well-known/` 路径，否则验证爬虫会被 301 带走、导致签发失败。
+#
+# server {
+#     listen 80;
+#     listen [::]:80;
+#     server_name app.example.com;
+#
+#     location /.well-known/acme-challenge/ { root /var/www/acme; }
+#     location /.well-known/pki-validation/ { root /var/www/pki-validation; }
+#
+#     location / { return 301 https://app.example.com$request_uri; }
+# }

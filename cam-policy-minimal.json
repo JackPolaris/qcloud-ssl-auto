@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "statement": [
+    {
+      "effect": "allow",
+      "action": [
+        "ssl:ApplyCertificate",
+        "ssl:DescribeCertificates",
+        "ssl:DescribeCertificate",
+        "ssl:DescribeCertificateDetail",
+        "ssl:DownloadCertificate",
+        "ssl:DeleteCertificate"
+      ],
+      "resource": ["*"]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 语法检查
+        run: python3 -m py_compile tc-cert-auto.py tc-cert-admin.py tests/test_signature_parity.py
+
+      - name: 安装腾讯云官方 SDK（仅用于签名交叉验证）
+        run: pip install --target pylibs tencentcloud-sdk-python-common
+
+      - name: 与官方 SDK 逐字节比对 TC3 签名与全部请求头
+        run: python3 tests/test_signature_parity.py
+
+      - name: 自检 --help / --version 可用
+        run: |
+          python3 tc-cert-auto.py --version
+          python3 tc-cert-auto.py --help > /dev/null

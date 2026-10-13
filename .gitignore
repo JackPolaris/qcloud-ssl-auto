@@ -1,0 +1,27 @@
+# ============ 绝不要提交的东西 ============
+
+# 腾讯云 API 密钥（能下载账号内任意证书私钥，泄露后果严重）
+credentials
+credentials.*
+!credentials.template
+
+# 本机实际配置：包含你的域名与证书路径等站点特定信息，
+# 且不提交可以让未来的 git pull 不会覆盖你正在用的配置
+config.json
+
+# ============ 开发/运行产物 ============
+
+# 官方 SDK，只有签名一致性测试需要（pip install --target ./pylibs ...）
+pylibs/
+venv/
+__pycache__/
+*.py[cod]
+
+# 脚本部署时留下的证书备份
+*.bak-*
+*.bak
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store

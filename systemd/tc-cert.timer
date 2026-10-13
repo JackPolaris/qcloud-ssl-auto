@@ -1,0 +1,13 @@
+[Unit]
+Description=定期检查并续期腾讯云 SSL 证书
+
+[Timer]
+# 每天跑一次; 脚本自身幂等, 未进入 30 天续签窗口会立刻退出
+OnCalendar=daily
+# 随机延迟最多 1 小时, 避免每天固定时刻打腾讯云 API
+RandomizedDelaySec=3600
+Persistent=true
+Unit=tc-cert.service
+
+[Install]
+WantedBy=timers.target
